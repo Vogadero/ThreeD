@@ -128,15 +128,36 @@ git push -u origin main
 
 ### 5.2 想让 Pages 上的国内观众也看到照片（可选升级）
 
-把照片服务部署到任意支持环境变量的免费平台（Cloudflare Workers / Vercel / Render），让 `server.js` 里的 `/api/photo`、`/api/img` 逻辑跑在上面，Key 存到该平台的**环境变量**里（前端始终看不到）。
+项目已附带一份 **Cloudflare Worker 脚本**（`deploy/worker.js`），它就是给 Pages 用的“服务端”。免费额度对个人项目绰绰有余（每天 10 万次请求）。
 
-部署后在 `index.html` 里加一行即可指向它：
+**第一步：部署 Worker（约 5 分钟）**
 
-```html
-<script>window.__PHOTO_API = 'https://<你的服务域名>/api/photo';</script>
+1. 注册 <https://dash.cloudflare.com>（免费）→ 左侧 **Workers 和 Pages** → **创建** → **创建 Worker**
+2. 起个名字（如 `shanghai-photo`）→ **部署** → 点 **编辑代码**
+3. 把 `deploy/worker.js` 的内容**全选粘贴**进去，覆盖默认代码 → 点 **部署**
+4. 到 **设置 → 变量和机密** → 添加两个变量：
+   - `AMAP_KEY` = 你的高德 Key（建议点“加密”）
+   - `ALLOW_ORIGIN` = `https://vogadero.github.io`（只允许你的站点调用，别留 `*`）
+5. 回到概览页，复制 Worker 地址，形如 `https://shanghai-photo.<你的账号>.workers.dev`
+
+访问 `https://<你的地址>/` 应返回：
+
+```json
+{"service":"shanghai-3d photo api","ok":true,"amap":"configured"}
 ```
 
-前端会自动优先使用这个地址，本地开发不配置则走同源 `/api/photo`。
+**第二步：让前端指向它**
+
+在 `index.html` 的 `<head>` 里加一行（位置见文件内的注释）：
+
+```html
+<script>window.__PHOTO_API = 'https://shanghai-photo.<你的账号>.workers.dev/api/photo';</script>
+```
+
+然后重新 `git push`，等 Pages 重建即可。
+
+> 图片 URL 由 Worker 直接返回原始地址，浏览器 `<img>` 加载不受 CORS 限制，因此 Worker 不需要做图片代理，也不消耗额外流量。
+> 本地开发不配置 `window.__PHOTO_API` 时，前端自动走同源 `/api/photo`，两边互不影响。
 
 ---
 

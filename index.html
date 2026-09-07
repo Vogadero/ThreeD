@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27><circle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23ff5d7a%27/><text x=%2716%27 y=%2722%27 font-size=%2718%27 text-anchor=%27middle%27 fill=%27white%27 font-family=%27sans-serif%27 font-weight=%27bold%27>沪</text></svg>">
     <title>上海 · 三维城市数字沙盘</title>
+    <!-- 纯静态部署(GitHub Pages)时, 把下面这行的注释去掉并填入 deploy/worker.js
+         部署后的地址, 线上即可走国内多源照片服务(高德 Key 存在 Worker 环境变量里,
+         不要写在前端)。本地开发留着注释即可, 会自动走同源 /api/photo。
+    <script>window.__PHOTO_API = 'https://<你的-worker地址>/api/photo';</script>
+    -->
 <style>
   :root{
     --bg:#070b14; --bg2:#0d1524;
@@ -439,6 +444,6 @@
   }
 }
 </script>
-<script type="module" src="./src/main.js?v=58"></script>
+<script type="module" src="./src/main.js?v=59"></script>
 </body>
 </html>
