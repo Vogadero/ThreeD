@@ -1,0 +1,24 @@
+# ============ 密钥与本地配置（绝不入库） ============
+data/amap_key.txt
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+
+# ============ 调试/临时产物（_ 前缀） ============
+_*
+!_verify_cdp.mjs      # 唯一常驻的验证脚本, 保留
+
+# ============ 运行时/依赖 ============
+node_modules/
+.chk/
+.chk_cruise.mjs
+.verify/
+_raw/
+probe-profile-*/
+
+# ============ 系统 ============
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,17 @@
+{
+ "zoom": 12,
+ "x0": 3423,
+ "x1": 3436,
+ "y0": 1664,
+ "y1": 1681,
+ "cols": 14,
+ "rows": 18,
+ "bounds": [
+  120.85,
+  30.67,
+  122.05,
+  31.9
+ ],
+ "source": "Esri World Imagery (ArcGIS Online)",
+ "tile": 256
+}
