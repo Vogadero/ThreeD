@@ -1,6 +1,6 @@
 import { fmt } from './util.js?v=32';
 import { PHOTO_VIEWS, renderMosaic, thumbURL } from './photos.js?v=32';
-import { getPlaceMedia, probeWikimedia } from './wikimedia.js?v=61';
+import { getPlaceMedia, probeWikimedia } from './wikimedia.js?v=62';
 
 /* =========================================================
    界面: 左侧折叠控制台 / 右侧详情抽屉 / 实景影像灯箱
@@ -476,10 +476,22 @@ export function initUI(ctx) {
           }
         });
       } else {
+        /* v=62: 加载失败的格子直接隐藏(原来只把透明度调到 0.3, 裂图+alt 文字仍占位)。
+           douyinpic 等签名图对不同网络环境可用性不同, 每张独立失败独立消失;
+           全部失败时给一行提示, 不留空网格。 */
+        window.__rpImgFail = (img) => {
+          const cell = img.parentElement;
+          if (cell) cell.style.display = 'none';
+          const g = cell && cell.parentElement;
+          if (g && g.id === 'rpGrid') {
+            const alive = [...g.children].some((c) => c.style.display !== 'none' && c.classList.contains('rp-cell'));
+            if (!alive) g.innerHTML = '<div class="empty" style="grid-column:1/-1;line-height:1.75">照片源在当前网络下不可用, 已隐藏加载失败的图<br><span style="color:#8fa6bd;font-size:11px">可点上方"抽屉内嵌街景"看 360° 实景</span></div>';
+          }
+        };
         m.photos.forEach((p, pi) => {
           const d = document.createElement('div');
           d.className = 'rp-cell';
-          d.innerHTML = `<img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" draggable="false" onerror="this.parentElement.style.opacity=0.3">
+          d.innerHTML = `<img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" draggable="false" onerror="window.__rpImgFail && window.__rpImgFail(this)">
             <u>${esc(p.title).slice(0, 22)}</u>`;
           d.onclick = () => openPhotoViewer(p.url, p.title, m.photos, pi);
           grid.appendChild(d);

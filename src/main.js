@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadJSON } from './util.js?v=32';
-import { buildWater, buildWaterExclusion } from './water.js?v=61';
-import { buildDistricts, makeDistrictLabels } from './districts.js?v=61';
-import { buildCity } from './buildings.js?v=61';
-import { buildTransit } from './transit.js?v=61';
+import { buildWater, buildWaterExclusion } from './water.js?v=62';
+import { buildDistricts, makeDistrictLabels } from './districts.js?v=62';
+import { buildCity } from './buildings.js?v=62';
+import { buildTransit } from './transit.js?v=62';
 import { buildCruise } from './cruise.js?v=32';
-import { buildAviation } from './aviation.js?v=61';
-import { buildMobility } from './mobility.js?v=61';
+import { buildAviation } from './aviation.js?v=62';
+import { buildMobility } from './mobility.js?v=62';
 import { buildBasemap, Y } from './basemap.js?v=32';
-import { buildLandmarks, resolveLandmarks } from './landmarks.js?v=61';
-import { buildSky } from './sky.js?v=61';
-import { initUI } from './ui.js?v=61';
+import { buildLandmarks, resolveLandmarks } from './landmarks.js?v=62';
+import { buildSky } from './sky.js?v=62';
+import { initUI } from './ui.js?v=62';
 
 /* =========================================================
    上海三维城市沙盘 · 主入口

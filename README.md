@@ -4,6 +4,14 @@
 
 零构建、零运行时依赖 —— 一条命令跑起来。
 
+| 日间全景 | 夜间模式 |
+|---|---|
+| ![日间全景](docs/shot-day.png) | ![夜间模式](docs/shot-night.png) |
+
+地标信息卡内的**真实照片**由多源回退链提供（高德 POI 实景 / 快懂百科 / 必应 / Wikimedia）， Key 只存服务端：
+
+![高德实景照片](docs/shot-photo.png)
+
 ```bash
 node server.js          # 打开 http://127.0.0.1:8080
 node server.js 3000     # 指定端口
