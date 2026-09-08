@@ -1,6 +1,6 @@
 import { fmt } from './util.js?v=32';
 import { PHOTO_VIEWS, renderMosaic, thumbURL } from './photos.js?v=32';
-import { getPlaceMedia, probeWikimedia } from './wikimedia.js?v=58';
+import { getPlaceMedia, probeWikimedia } from './wikimedia.js?v=61';
 
 /* =========================================================
    界面: 左侧折叠控制台 / 右侧详情抽屉 / 实景影像灯箱

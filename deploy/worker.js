@@ -68,7 +68,11 @@ async function amapSrc(name, key, dbg) {
   const photos = [];
   for (const p of (hit.photos || []).slice(0, 6)) {
     const u = p.url || p.photo;
-    if (u) photos.push({ url: u.replace(/^http:/, 'https:'), title: p.title || hit.name || name });
+    if (!u) continue;
+    /* v=61: 高德 photos[].title 是数组(常为空数组), 空数组在 JS 里是 truthy,
+       直接 `p.title || 地名` 会拿到 [] —— 必须判非空字符串再回退。 */
+    const t = (typeof p.title === 'string' && p.title.trim()) ? p.title.trim() : (hit.name || name);
+    photos.push({ url: u.replace(/^http:/, 'https:'), title: t });
   }
   if (!photos.length) { dbg.amap = 'no-photos:' + hit.name; return null; }
   dbg.amap = 'ok:' + photos.length + ':' + hit.name;

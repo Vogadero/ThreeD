@@ -186,7 +186,11 @@ async function amapSrc(name /* , lon, lat */) {
   const photos = [];
   for (const p of (hit.photos || []).slice(0, 6)) {
     const u = p.url || p.photo;
-    if (u) photos.push({ url: pimg(u), title: p.title || hit.name || name });
+    if (!u) continue;
+    /* v=61: 高德 photos[].title 是数组(常为空数组), 空数组 truthy 会让
+       `p.title || 地名` 拿到 [] —— 必须判非空字符串再回退。 */
+    const t = (typeof p.title === 'string' && p.title.trim()) ? p.title.trim() : (hit.name || name);
+    photos.push({ url: pimg(u), title: t });
   }
   return photos.length ? { photos, extract: '', title: hit.name || name, source: '高德地图 POI' } : null;
 }

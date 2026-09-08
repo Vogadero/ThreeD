@@ -170,9 +170,17 @@ export async function getPlaceMedia(place) {
        window.__PHOTO_API = 'https://<你的-worker>/api/photo' 指向外部照片服务,
        未配置时仍走同源 /api/photo。 */
     const PHOTO_API = (typeof window !== 'undefined' && window.__PHOTO_API) || '/api/photo';
+    const qs = `q=${encodeURIComponent(place.wiki || place.name)}&lon=${place.lon || ''}&lat=${place.lat || ''}`;
     const domP = (async () => {
       try {
-        const r = await fetchT(`${PHOTO_API}?q=${encodeURIComponent(place.wiki || place.name)}&lon=${place.lon || ''}&lat=${place.lat || ''}`, 9000);
+        let r = await fetchT(`${PHOTO_API}?${qs}`, 9000);
+        /* v=61: 配了外部服务(Worker)但取不到时, 回退同源 /api/photo,
+           本地开发(有 server.js)照常出图, 两边互不阻塞。 */
+        if (!r.ok && window.__PHOTO_API) {
+          const r2 = await fetchT(`/api/photo?${qs}`, 9000);
+          if (r2.ok) return await r2.json();
+          return { __status: r2.status };
+        }
         if (!r.ok) return { __status: r.status };
         return await r.json();
       } catch (e) { return null; }
