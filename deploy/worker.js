@@ -38,29 +38,45 @@ async function jget(url, ms) {
   return r.json();
 }
 
-/* ---------- 来源 1: 高德 POI 实景图 (需 AMAP_KEY) ---------- */
-async function amapSrc(name, key) {
-  if (!key) return null;
+/* ---------- 来源 1: 高德 POI 实景图 (需 AMAP_KEY) ----------
+   v=60: Worker 出口在海外, 跨境请求高德延迟高 -> 超时提到 10s 并重试一次;
+   同时把命中情况写进 debug, 便于远程诊断。 */
+async function amapSrc(name, key, dbg) {
+  if (!key) { dbg.amap = 'no-key'; return null; }
   const qs = new URLSearchParams({ key, keywords: name, city: '上海', citylimit: 'true', offset: '5', extensions: 'all' });
-  const d = await jget('https://restapi.amap.com/v3/place/text?' + qs.toString(), 6000);
-  if (d.status !== '1' || !Array.isArray(d.pois)) return null;
+  const url = 'https://restapi.amap.com/v3/place/text?' + qs.toString();
+  let d = null, err = 'unknown';
+  for (let attempt = 0; attempt < 2 && !d; attempt++) {
+    try {
+      const r = await fetchT(url, 10000);
+      if (!r.ok) { err = 'http' + r.status; continue; }
+      const j = await r.json();
+      if (j.status === '1') { d = j; break; }
+      err = 'api:' + (j.info || j.status);
+    } catch (e) {
+      err = 'fetch:' + String(e && e.name || e).slice(0, 30);   // 超时通常是 AbortError
+    }
+  }
+  if (!d || !Array.isArray(d.pois)) { dbg.amap = 'error:' + err; return null; }
   const norm = (s) => String(s || '').replace(/[\s·・\-—_（）()]/g, '').toLowerCase();
   const k = norm(name);
   const hit = d.pois.find((p) => {
     const n = norm(p.name);
     return n && (n.includes(k) || k.includes(n));
   });
-  if (!hit) return null;
+  if (!hit) { dbg.amap = 'no-match:' + (d.pois[0] && d.pois[0].name || 'none'); return null; }
   const photos = [];
   for (const p of (hit.photos || []).slice(0, 6)) {
     const u = p.url || p.photo;
     if (u) photos.push({ url: u.replace(/^http:/, 'https:'), title: p.title || hit.name || name });
   }
-  return photos.length ? { photos, extract: '', title: hit.name || name, source: '高德地图 POI' } : null;
+  if (!photos.length) { dbg.amap = 'no-photos:' + hit.name; return null; }
+  dbg.amap = 'ok:' + photos.length + ':' + hit.name;
+  return { photos, extract: '', title: hit.name || name, source: '高德地图 POI' };
 }
 
 /* ---------- 来源 2: 快懂百科 (免 Key) ---------- */
-async function kuaidongSrc(name) {
+async function kuaidongSrc(name, dbg) {
   const r = await fetchT('https://www.baike.com/wiki/' + encodeURIComponent(name), 7000);
   if (!r.ok) return null;
   const html = await r.text();
@@ -79,12 +95,13 @@ async function kuaidongSrc(name) {
   let extract = '';
   const dm = html.match(/<meta\s+name="description"\s+content="([^"]{30,600})"/);
   if (dm) extract = dm[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-  if (!photos.length && !extract) return null;
+  if (!photos.length && !extract) { dbg.kuaidong = 'empty'; return null; }
+  dbg.kuaidong = photos.length ? 'photos:' + photos.length : 'text-only';
   return { photos: photos.slice(0, 6), extract, title: name, source: '快懂百科' };
 }
 
 /* ---------- 来源 3: 必应图片 (免 Key, 引号精确搜索 + 相关性过滤) ---------- */
-async function bingSrc(name) {
+async function bingSrc(name, dbg) {
   const r = await fetchT('https://cn.bing.com/images/search?q=' + encodeURIComponent('"' + name + '"') + '&form=HDRSC2',
     7000, { Referer: 'https://cn.bing.com/' });
   if (!r.ok) return null;
@@ -107,7 +124,9 @@ async function bingSrc(name) {
       photos.push({ url: t.replace(/^http:/, 'https:'), title: name });
     } catch (e) { /* 单卡解析失败跳过 */ }
   }
-  return photos.length ? { photos, extract: '', title: name, source: '必应图片' } : null;
+  if (!photos.length) { dbg.bing = 'no-relevant'; return null; }
+  dbg.bing = 'ok:' + photos.length;
+  return { photos, extract: '', title: name, source: '必应图片' };
 }
 
 const cache = new Map();
@@ -117,11 +136,12 @@ async function aggregate(q, key) {
   const c = cache.get(q);
   if (c && Date.now() - c.at < 600000) return c.data;
 
-  const want = (f) => f().catch(() => null);
+  const dbg = { amap: 'n/a', kuaidong: 'n/a', bing: 'n/a' };
+  const want = (f) => f().catch((e) => { return null; });
   const results = await Promise.all([
-    want(() => amapSrc(q, key)),
-    want(() => kuaidongSrc(q)),
-    want(() => bingSrc(q)),
+    want(() => amapSrc(q, key, dbg)),
+    want(() => kuaidongSrc(q, dbg)),
+    want(() => bingSrc(q, dbg)),
   ]);
   const out = { photos: [], extract: '', title: '', source: '' };
   const seen = new Set();
@@ -140,7 +160,8 @@ async function aggregate(q, key) {
     }
   }
   out.source = srcPhoto || srcExtract || '无可用来源';
-  const data = { photos: out.photos, extract: out.extract, source: out.source, title: out.title };
+  /* debug 字段仅用于远程诊断(各源命中情况), 前端不使用 */
+  const data = { photos: out.photos, extract: out.extract, source: out.source, title: out.title, debug: dbg };
   if (cache.size > 200) cache.delete(cache.keys().next().value);
   cache.set(q, { at: Date.now(), data });
   return data;
